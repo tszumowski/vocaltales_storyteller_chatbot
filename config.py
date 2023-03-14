@@ -4,6 +4,7 @@ RESOLUTION = "512x512"  # One of 256x256, 512x512, 1024x1024
 PROMPT_MAX_LEN = 1000  # Max length of prompt for DALL-E
 IMAGE_PATH = "generated_image.jpg"  # path to save generated image
 TRANSCRIPT_PATH = f"transcript-{int(time.time())}.txt"
+GENERATED_SPEECH_PATH = "generated_speech.mp3"
 
 """
 Example Prompts

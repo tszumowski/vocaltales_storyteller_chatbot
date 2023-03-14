@@ -1,2 +1,4 @@
-openai
+google-cloud-texttospeech
 gradio
+openai
+
