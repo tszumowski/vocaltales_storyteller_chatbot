@@ -20,3 +20,8 @@ Make note of pricing.
 
 - [ ] Fix the audio thread error that pops up
 - [ ] Document
+
+- [ ] Add directions for getting TTS key
+- [ ] Add option to use local system or Google TTS (or if key not provided)
+- [ ] Try using audio change from demo since doesn't seem to work (change or upload event)
+- [ ] Report updated code after committed to github issue referenced in gradio
