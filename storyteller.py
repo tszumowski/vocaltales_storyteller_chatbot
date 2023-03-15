@@ -190,4 +190,4 @@ with gr.Blocks(analytics_enabled=False, title="Audio Storyteller") as ui:
         # Separately trigger the autoplay audio function
         story_msg.change(None, None, None, _js=autoplay_audio)
 
-ui.launch()
+ui.launch(server_name=config.SERVER_ADDRESS)

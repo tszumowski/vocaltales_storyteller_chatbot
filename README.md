@@ -54,3 +54,16 @@ This application has only been tested on a Macbook.
 1. Navigate to `http://127.0.0.1:7860/` and have fun!
 
 
+## Deploying to Google Cloud Run
+
+Replace `<service-name>` with a name of your choice.
+
+1. Build Docker image: `docker build -t <image-name> .`
+1. Tag and push (Note: Follow [these directions](https://cloud.google.com/container-registry/docs/advanced-authentication) to authenticate)
+    ```
+    docker tag <image-name> gcr.io/<project-id>/<image-name>
+    docker push gcr.io/<project-id>/<image-name>
+    ```
+1. Deploy: `gcloud run deploy <service-name> --image gcr.io/<project-id>/<image-name> --platform managed`
+
+Cloud Run will automatically scale the number of instances based on the incoming traffic. You can access the deployed Gradio application via the URL provided by the Cloud Run service.
