@@ -20,4 +20,4 @@ COPY storyteller.py config.py ./
 EXPOSE 7860
 
 # Set the default command to execute the `storyteller.py` script
-CMD ["python", "storyteller.py", "--address=0.0.0.0", "--port=7860"]
+CMD ["python", "storyteller.py"]

@@ -47,7 +47,6 @@ def transcribe_audio(audio_file: str) -> str:
     """
     # gradio sends in a .wav file type, but it may not be named that. Rename with
     # .wav extension because Whisper model only accepts certain file extensions.
-    print(f"Transcribe audio file input: {audio_file}")
     if not audio_file.endswith(".wav"):
         os.rename(audio_file, audio_file + ".wav")
         audio_file = audio_file + ".wav"
@@ -89,7 +88,7 @@ def chat_complete(text_input: str) -> str:
         # call subprocess in background
         subprocess.Popen(["say", system_message["content"]])
 
-    # Write current state of messages to file
+    # Write current state of messages to file for debug
     with open(config.TRANSCRIPT_PATH, "w") as f:
         for message in messages:
             f.write(f"{message['role']}: {message['content']}\n\n")
@@ -240,6 +239,25 @@ if __name__ == "__main__":
         default=None,
         help="Port to run the server on",
     )
+    parser.add_argument(
+        "--username",
+        type=str,
+        default=None,
+        help="Username for basic auth",
+    )
+    parser.add_argument(
+        "--password",
+        type=str,
+        default=None,
+        help="Password for basic auth",
+    )
     args = parser.parse_args()
 
-    ui.launch(server_name=args.address, server_port=args.port)
+    # Configure auth
+    if args.username and args.password:
+        auth = (args.username, args.password)
+    else:
+        auth = None
+
+    # Launch UI
+    ui.launch(server_name=args.address, server_port=args.port, auth=auth)

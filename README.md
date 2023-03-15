@@ -66,10 +66,19 @@ Replace `<service-name>` with a name of your choice.
 docker run -it --rm \
     -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/creds.json \
     -v ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/creds.json \
-    -e OPENAI_API_KEY=<openai-api-key> -p <port>:7860 audio-storyteller
+    -e OPENAI_API_KEY=<openai-api-key> \
+    -p <port>:7860 \
+    audio-storyteller \
+    python storyteller.py \
+    --address=0.0.0.0 \
+    --port=7860 \
+    --user=<username> \
+    --password=<password>
 ```
 
-Fill in: `<openai-api-key> and <port>. Then once up. Navigate on a browser to `127.0.0.1:<port>`
+Fill in: `<openai-api-key>, <port>, and optional <username>:<password>.
+Then once running, navigate on a browser to `127.0.0.1:<port>` and fill in the
+optional username:password you provided.
 
 ## Deploying to Google Cloud Run
 
@@ -79,6 +88,21 @@ Fill in: `<openai-api-key> and <port>. Then once up. Navigate on a browser to `1
    docker tag <image-name> gcr.io/<project-id>/<image-name>
    docker push gcr.io/<project-id>/<image-name>
    ```
-1. Deploy: `gcloud run deploy <service-name> --image gcr.io/<project-id>/<image-name> --platform managed`
+1. Create a service account on your GCP project IAM page named: `audio-storytelling-bot@<project-id>.iam.gserviceaccount.com`
+1. Deploy with the following command, setting anything in `<>` appropriately:
+
+   ```
+   gcloud run deploy audio-storytelling-bot \
+       --image gcr.io/<project-id>/<image-name> \
+       --platform managed \
+       --service-account=audio-storytelling-bot@<project-id>.iam.gserviceaccount.com \
+       --set-env-vars=OPENAI_API_KEY=<openai-key-string> \
+       --no-allow-unauthenticated \
+       --port=7860 \
+       --cpu=1 \
+       --memory=512Mi \
+       --min-instances=0 \
+       --max-instances=1
+   ```
 
 Cloud Run will automatically scale the number of instances based on the incoming traffic. You can access the deployed Gradio application via the URL provided by the Cloud Run service.
