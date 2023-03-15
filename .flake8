@@ -1,0 +1,18 @@
+[flake8]
+# Some sane defaults for the code style checker flake8
+exclude =
+    .tox
+    build
+    dist
+    .eggs
+    docs/conf.py
+max-line-length = 88
+ignore =
+    # Whitespace before ':'
+    E203
+    # Whitepsace at end of line
+    W291
+    # Line break before logical
+    W503
+    # Missing f-string placeholders
+    F541
