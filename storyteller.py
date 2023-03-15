@@ -174,12 +174,15 @@ with gr.Blocks(analytics_enabled=False, title="Audio Storyteller") as ui:
     file sent to the gradio object in browser.
     """
     autoplay_audio = """
-        async () => {
-            setTimeout(() => {
-                document.querySelector('#speaker audio').play();
-            }, 2000);
-        }
-    """
+            async () => {{
+                setTimeout(() => {{
+                    document.querySelector('#speaker audio').play();
+                }}, {speech_delay});
+            }}
+        """.format(
+        speech_delay=int(config.TTS_SPEECH_DELAY * 1000)
+    )
+
     if config.SPEECH_METHOD == SpeechMethod.GCP:
         # Connect story output to audio output after calling TTS on it
         story_msg.change(text_to_speech, story_msg, audio_output)

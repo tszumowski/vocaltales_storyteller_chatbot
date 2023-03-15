@@ -43,12 +43,9 @@ This application has only been tested on a Macbook.
 1. Review and update config in `config.py` as desired
 1. If using GCP TTS
   1. set in `config.py`: `SPEECH_METHOD = SpeechMethod.GCP`
+  1. Navigate to the [Google API page](https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/) and enable the API
+  1. 
   1. TODO: Mention
 1. Run with: `python storyteller.py`
 1. Navigate to `http://127.0.0.1:7860/` and have fun!
 
-## TODO
-
-- [ ] Document
-- [ ] Add directions for getting TTS key
-- [ ] Report updated code after committed to github issue referenced in gradio

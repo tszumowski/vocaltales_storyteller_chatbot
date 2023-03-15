@@ -134,3 +134,4 @@ dmypy.json
 **/*.mp3
 **/*.wav
 **/*.json
+**/*.txt
