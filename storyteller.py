@@ -4,8 +4,11 @@ import openai
 import os
 import requests
 import subprocess
-from typing import BinaryIO
+
+from config import SpeechMethod
 from google.cloud import texttospeech
+from typing import BinaryIO
+
 
 # Set OpenAI API Key
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -47,8 +50,9 @@ def chat_complete(text_input: str) -> str:
     # Return message to display
     display_message = system_message["content"]
 
-    # # call subprocess in background
-    # subprocess.Popen(["say", system_message["content"]])
+    if config.SPEECH_METHOD == SpeechMethod.MAC:
+        # call subprocess in background
+        subprocess.Popen(["say", system_message["content"]])
 
     # Write current state of messages to file
     with open(config.TRANSCRIPT_PATH, "w") as f:
@@ -70,7 +74,7 @@ def generate_image(text_input: str) -> str:
 
 
 # Call Google Cloud Text-to-Speech API to convert text to speech
-def text_to_speech(input_text: str) -> bytes:
+def text_to_speech(input_text: str) -> str:
     """
     Use GCP Text-to-Speech API to convert text to a WAV file.
 
@@ -78,7 +82,7 @@ def text_to_speech(input_text: str) -> bytes:
         input_text: Text to convert to speech
 
     Returns
-        str: Path to WAV file
+        str: Path to output audio file
     """
     print(f"Convert text to speech: {input_text}")
     # set up the client object
@@ -89,7 +93,7 @@ def text_to_speech(input_text: str) -> bytes:
 
     # set up the voice parameters
     voice = texttospeech.VoiceSelectionParams(
-        language_code="en-US", name="en-US-Neural2-C"
+        language_code=config.TTS_VOICE_LANGUAGE_CODE, name=config.TTS_VOICE
     )
 
     # set up the audio parameters
@@ -102,9 +106,6 @@ def text_to_speech(input_text: str) -> bytes:
     response = client.synthesize_speech(
         input=synthesis_input, voice=voice, audio_config=audio_config
     )
-
-    # print("CONTENT:")
-    # print(response.audio_content)
 
     # save the response audio as an MP3 file
     with open(config.GENERATED_SPEECH_PATH, "wb") as out:
@@ -119,7 +120,7 @@ with gr.Blocks() as ui:
     with gr.Row():
         with gr.Column(scale=1):
             # Audio Input Box
-            # audio_input = gr.Audio(source="microphone", type="filepath", label="Input")
+            audio_input = gr.Audio(source="microphone", type="filepath", label="Input")
 
             # User Input Box
             user_input = gr.Textbox(label="Transcription")
@@ -127,22 +128,30 @@ with gr.Blocks() as ui:
             # Story Output Box
             story_msg = gr.Textbox(label="Story")
 
-            audio_output = gr.Audio(label="Output", elem_id="speaker")
+            # Add components for TTS
+            if config.SPEECH_METHOD == SpeechMethod.GCP:
+                # Audio output box if using Google Cloud TTS
+                audio_output = gr.Audio(label="Output", elem_id="speaker")
 
-            # Just a sink to pass through and trigger Javascript audio autoplay on
-            text_sink = gr.Textbox(label="Debug", visible=False)
+                # Just a sink to pass through and trigger Javascript audio autoplay on
+                text_sink = gr.Textbox(label="Debug", visible=False)
 
         with gr.Column(scale=1):
             # Story Generated Image
             gen_image = gr.Image(label="Story Image", shape=(None, 5))
 
     # # Connect audio input to user input
-    # audio_input.change(transcribe_audio, audio_input, user_input)
+    audio_input.change(transcribe_audio, audio_input, user_input)
 
     # Connect user input to story output
     user_input.change(chat_complete, user_input, story_msg)
 
+    # Connect story output to image generation
+    story_msg.change(generate_image, story_msg, gen_image)
+
     """
+    Used for GCP TTS only
+
     Workaround: Custom (hacky) Javascript function to autoplay audio
     Derived from: https://github.com/gradio-app/gradio/issues/1349
     Needs a timeout to wait for the Google TTS call to complete and the audio
@@ -152,17 +161,14 @@ with gr.Blocks() as ui:
         async () => {
             setTimeout(() => {
                 document.querySelector('#speaker audio').play();
-            }, 3000);
+            }, 2000);
         }
     """
-    story_msg.change(text_to_speech, story_msg, audio_output)
+    if config.SPEECH_METHOD == SpeechMethod.GCP:
+        # Connect story output to audio output after calling TTS on it
+        story_msg.change(text_to_speech, story_msg, audio_output)
 
-    # Use the sink to trigger the audio autoplay javascript since it doesn't
-    # seem to work on the audio output, and doesn't play if attached to story_msg
-    story_msg.change(None, story_msg, text_sink)
-    text_sink.change(None, None, None, _js=autoplay_audio)
-
-    # Connect story output to image generation
-    story_msg.change(generate_image, story_msg, gen_image)
+        # Separately trigger the autoplay audio function
+        story_msg.change(None, None, None, _js=autoplay_audio)
 
 ui.launch()
