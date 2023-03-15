@@ -230,7 +230,7 @@ if __name__ == "__main__":
         default="127.0.0.1",
         help="""
         Address to run the server on. 127.0.0.1 for local. 0.0.0.0 for "
-        "remote or docker",
+        remote or docker
         """,
     )
     # add a port with None default
