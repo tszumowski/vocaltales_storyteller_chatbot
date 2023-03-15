@@ -44,7 +44,7 @@ This application has only been tested on a Macbook.
 1. If using GCP TTS
   1. set in `config.py`: `SPEECH_METHOD = SpeechMethod.GCP`
   1. Navigate to the [Google API page](https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/) and enable the API
-  1. 
+  1.
   1. TODO: Mention
 1. Run with: `python storyteller.py`
 1. Navigate to `http://127.0.0.1:7860/` and have fun!
