@@ -30,7 +30,12 @@ Both OpenAI and Google offer free credits for new users.
 
 ## Setup
 
-TODO: Describe mac vs. GCP
+Note there are two ways to speak the story: Mac or GCP Text-to-Speech. If using a Mac,
+the Mac `say` command is used and that's the easiest/fastest route to running this.
+It uses the System voice set up in the Accessibility settings.
+However, if not on a Mac or if you prefer a more realistic voice, the GCP Text-to-Speech may be used.
+This requires you having (a) a GCP project, (b) the TTS API enabled, and (c) your account authenticated
+in gcloud (or GOOGLE_APPLICATION_CREDENTIALS environment variable set).
 
 This application has only been tested on a Macbook.
 
@@ -44,8 +49,8 @@ This application has only been tested on a Macbook.
 1. If using GCP TTS
   1. set in `config.py`: `SPEECH_METHOD = SpeechMethod.GCP`
   1. Navigate to the [Google API page](https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/) and enable the API
-  1.
-  1. TODO: Mention
+  1. Confirm you are authenticated in gcloud and your account has access to that API.
 1. Run with: `python storyteller.py`
 1. Navigate to `http://127.0.0.1:7860/` and have fun!
+
 
