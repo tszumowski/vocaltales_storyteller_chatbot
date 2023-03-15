@@ -24,7 +24,11 @@ messages = [
 ]
 
 
-# Main functions
+"""
+Main functions
+"""
+
+
 def transcribe_audio(audio: BinaryIO) -> str:
     # Open audio file and transcribe
     with open(audio, "rb") as audio_file:
@@ -63,7 +67,15 @@ def chat_complete(text_input: str) -> str:
 
 
 def generate_image(text_input: str) -> str:
-    # Call OpenAI DALL-E using response
+    """
+    Generate an image using DALL-E via OpenAI API.
+
+    Args:
+        text_input: Text to use as prompt for image generation
+
+    Returns:
+        str: Path to generated image
+    """
     prompt = text_input[: config.PROMPT_MAX_LEN]
     response = openai.Image.create(prompt=prompt, n=1, size=config.RESOLUTION)
     image_url = response["data"][0]["url"]
@@ -115,15 +127,19 @@ def text_to_speech(input_text: str) -> str:
     return config.GENERATED_SPEECH_PATH
 
 
-# Gradio UI
-with gr.Blocks() as ui:
+"""
+Gradio UI Definition
+"""
+with gr.Blocks(analytics_enabled=False, title="Audio Storyteller") as ui:
     with gr.Row():
         with gr.Column(scale=1):
             # Audio Input Box
-            audio_input = gr.Audio(source="microphone", type="filepath", label="Input")
+            audio_input = gr.Audio(
+                source="microphone", type="filepath", label="User Audio Input"
+            )
 
             # User Input Box
-            user_input = gr.Textbox(label="Transcription")
+            transcribed_input = gr.Textbox(label="Transcription")
 
             # Story Output Box
             story_msg = gr.Textbox(label="Story")
@@ -140,11 +156,11 @@ with gr.Blocks() as ui:
             # Story Generated Image
             gen_image = gr.Image(label="Story Image", shape=(None, 5))
 
-    # # Connect audio input to user input
-    audio_input.change(transcribe_audio, audio_input, user_input)
+    # Connect audio input to user input
+    audio_input.change(transcribe_audio, audio_input, transcribed_input)
 
-    # Connect user input to story output
-    user_input.change(chat_complete, user_input, story_msg)
+    # Connect user trainput to story output
+    transcribed_input.change(chat_complete, transcribed_input, story_msg)
 
     # Connect story output to image generation
     story_msg.change(generate_image, story_msg, gen_image)
