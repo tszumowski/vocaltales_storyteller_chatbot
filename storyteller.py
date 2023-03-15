@@ -1,10 +1,20 @@
+"""
+Storyteller: A simple audio storytelling app using OpenAI API.
+
+Example Usage:
+    python storyteller.py --address=127.0.0.1 --port=7860
+"""
+import argparse
 import config
 import gradio as gr
 import openai
 import os
 import requests
 import subprocess
-from typing import BinaryIO
+
+from config import SpeechMethod
+from google.cloud import texttospeech
+
 
 # Set OpenAI API Key
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -20,17 +30,45 @@ messages = [
 ]
 
 
-# Main functions
-def transcribe_audio(audio: BinaryIO) -> str:
+"""
+Main functions
+"""
+
+
+def transcribe_audio(audio_file: str) -> str:
+    """
+    Transcribe audio file using OpenAI API.
+
+    Args:
+        audio: stringified path to audio file. WAV file type.
+
+    Returns:
+        str: Transcription of audio file
+    """
+    # gradio sends in a .wav file type, but it may not be named that. Rename with
+    # .wav extension because Whisper model only accepts certain file extensions.
+    if not audio_file.endswith(".wav"):
+        os.rename(audio_file, audio_file + ".wav")
+        audio_file = audio_file + ".wav"
+
     # Open audio file and transcribe
-    with open(audio, "rb") as audio_file:
-        transcript = openai.Audio.transcribe("whisper-1", audio_file)
+    with open(audio_file, "rb") as f:
+        transcript = openai.Audio.transcribe("whisper-1", f)
     text_transcription = transcript["text"]
 
     return text_transcription
 
 
 def chat_complete(text_input: str) -> str:
+    """
+    Chat complete using OpenAI API. This is what generates stories.
+
+    Args:
+        text_input: Text to use as prompt for story generation
+
+    Returns:
+        str: Generated story
+    """
     global messages
 
     # Append to messages for chat completion
@@ -46,10 +84,11 @@ def chat_complete(text_input: str) -> str:
     # Return message to display
     display_message = system_message["content"]
 
-    # call subprocess in background
-    subprocess.Popen(["say", system_message["content"]])
+    if config.SPEECH_METHOD == SpeechMethod.MAC:
+        # call subprocess in background
+        subprocess.Popen(["say", system_message["content"]])
 
-    # Write current state of messages to file
+    # Write current state of messages to file for debug
     with open(config.TRANSCRIPT_PATH, "w") as f:
         for message in messages:
             f.write(f"{message['role']}: {message['content']}\n\n")
@@ -58,7 +97,15 @@ def chat_complete(text_input: str) -> str:
 
 
 def generate_image(text_input: str) -> str:
-    # Call OpenAI DALL-E using response
+    """
+    Generate an image using DALL-E via OpenAI API.
+
+    Args:
+        text_input: Text to use as prompt for image generation
+
+    Returns:
+        str: Path to generated image
+    """
     prompt = text_input[: config.PROMPT_MAX_LEN]
     response = openai.Image.create(prompt=prompt, n=1, size=config.RESOLUTION)
     image_url = response["data"][0]["url"]
@@ -68,40 +115,149 @@ def generate_image(text_input: str) -> str:
     return config.IMAGE_PATH
 
 
-def clear_audio(audio):
-    audio.value = None
+# Call Google Cloud Text-to-Speech API to convert text to speech
+def text_to_speech(input_text: str) -> str:
+    """
+    Use GCP Text-to-Speech API to convert text to a WAV file.
+
+    Args:
+        input_text: Text to convert to speech
+
+    Returns
+        str: Path to output audio file
+    """
+    print(f"Convert text to speech: {input_text}")
+    # set up the client object
+    client = texttospeech.TextToSpeechClient()
+
+    # set up the synthesis input object
+    synthesis_input = texttospeech.SynthesisInput(text=input_text)
+
+    # set up the voice parameters
+    voice = texttospeech.VoiceSelectionParams(
+        language_code=config.TTS_VOICE_LANGUAGE_CODE, name=config.TTS_VOICE
+    )
+
+    # set up the audio parameters
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.LINEAR16,
+        sample_rate_hertz=16000,
+    )
+
+    # generate the request
+    response = client.synthesize_speech(
+        input=synthesis_input, voice=voice, audio_config=audio_config
+    )
+
+    # save the response audio as an MP3 file
+    with open(config.GENERATED_SPEECH_PATH, "wb") as out:
+        out.write(response.audio_content)
+
+    # return response.audio_content
+    return config.GENERATED_SPEECH_PATH
 
 
-# Gradio UI
-with gr.Blocks() as ui:
+"""
+Gradio UI Definition
+"""
+with gr.Blocks(analytics_enabled=False, title="Audio Storyteller") as ui:
     with gr.Row():
         with gr.Column(scale=1):
             # Audio Input Box
-            audio_input = gr.Audio(source="microphone", type="filepath", label="Input")
-
-            # # Button to clear the audio
-            # clear_audio = gr.Button(label="Clear Audio")
+            audio_input = gr.Audio(
+                source="microphone", type="filepath", label="User Audio Input"
+            )
 
             # User Input Box
-            user_input = gr.Textbox(label="Transcription")
+            transcribed_input = gr.Textbox(label="Transcription")
 
             # Story Output Box
             story_msg = gr.Textbox(label="Story")
+
+            # Add components for TTS
+            if config.SPEECH_METHOD == SpeechMethod.GCP:
+                # Audio output box if using Google Cloud TTS
+                audio_output = gr.Audio(label="Output", elem_id="speaker")
+
+                # Just a sink to pass through and trigger Javascript audio autoplay on
+                text_sink = gr.Textbox(label="Debug", visible=False)
 
         with gr.Column(scale=1):
             # Story Generated Image
             gen_image = gr.Image(label="Story Image", shape=(None, 5))
 
-    # # Connect clear audio button to audio input
-    # clear_audio.(clear_audio, audio_input)
-
     # Connect audio input to user input
-    audio_input.change(transcribe_audio, audio_input, user_input)
+    audio_input.change(transcribe_audio, audio_input, transcribed_input)
 
-    # Connect user input to story output
-    user_input.change(chat_complete, user_input, story_msg)
+    # Connect user trainput to story output
+    transcribed_input.change(chat_complete, transcribed_input, story_msg)
 
     # Connect story output to image generation
     story_msg.change(generate_image, story_msg, gen_image)
 
-ui.launch()
+    """
+    Used for GCP TTS only
+
+    Workaround: Custom (hacky) Javascript function to autoplay audio
+    Derived from: https://github.com/gradio-app/gradio/issues/1349
+    Needs a timeout to wait for the Google TTS call to complete and the audio
+    file sent to the gradio object in browser.
+    """
+    autoplay_audio = """
+            async () => {{
+                setTimeout(() => {{
+                    document.querySelector('#speaker audio').play();
+                }}, {speech_delay});
+            }}
+        """.format(
+        speech_delay=int(config.TTS_SPEECH_DELAY * 1000)
+    )
+
+    if config.SPEECH_METHOD == SpeechMethod.GCP:
+        # Connect story output to audio output after calling TTS on it
+        story_msg.change(text_to_speech, story_msg, audio_output)
+
+        # Separately trigger the autoplay audio function
+        story_msg.change(None, None, None, _js=autoplay_audio)
+
+if __name__ == "__main__":
+    # Add a address string argument that defaults to 127.0.0.1
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--address",
+        type=str,
+        default="127.0.0.1",
+        help="""
+        Address to run the server on. 127.0.0.1 for local. 0.0.0.0 for "
+        remote or docker
+        """,
+    )
+    # add a port with None default
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Port to run the server on",
+    )
+    parser.add_argument(
+        "--username",
+        type=str,
+        default=None,
+        help="Username for basic auth",
+    )
+    parser.add_argument(
+        "--password",
+        type=str,
+        default=None,
+        help="Password for basic auth",
+    )
+    args = parser.parse_args()
+
+    # Configure auth
+    if args.username and args.password:
+        auth = (args.username, args.password)
+    else:
+        auth = None
+
+    # Launch UI
+    ui.launch(server_name=args.address, server_port=args.port, auth=auth)

@@ -1,0 +1,31 @@
+---
+fail_fast: true
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.1.0
+    hooks:
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: pretty-format-json
+        args: ["--autofix"]
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: detect-private-key
+      - id: forbid-new-submodules
+      - id: trailing-whitespace
+      - id: requirements-txt-fixer
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.14.0
+    hooks:
+      - id: yamllint
+        args: ['-d {rules: {line-length: disable}}', '-s']
+  - repo: https://github.com/ambv/black
+    rev: 22.3.0
+    hooks:
+      - id: black
+        language_version: python3
+  - repo: https://github.com/pycqa/flake8
+    rev: 3.8.3
+    hooks:
+      - id: flake8
+        args: ["--config=.flake8"]

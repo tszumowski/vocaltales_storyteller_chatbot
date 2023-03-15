@@ -1,2 +1,6 @@
-openai
+black
+flake8
+google-cloud-texttospeech
 gradio
+openai
+pre-commit
