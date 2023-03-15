@@ -1,3 +1,10 @@
+"""
+Storyteller: A simple audio storytelling app using OpenAI API.
+
+Example Usage:
+    python storyteller.py --address=127.0.0.1 --port=7860
+"""
+import argparse
 import config
 import gradio as gr
 import openai
@@ -7,7 +14,6 @@ import subprocess
 
 from config import SpeechMethod
 from google.cloud import texttospeech
-from typing import BinaryIO
 
 
 # Set OpenAI API Key
@@ -29,16 +35,41 @@ Main functions
 """
 
 
-def transcribe_audio(audio: BinaryIO) -> str:
+def transcribe_audio(audio_file: str) -> str:
+    """
+    Transcribe audio file using OpenAI API.
+
+    Args:
+        audio: stringified path to audio file. WAV file type.
+
+    Returns:
+        str: Transcription of audio file
+    """
+    # gradio sends in a .wav file type, but it may not be named that. Rename with
+    # .wav extension because Whisper model only accepts certain file extensions.
+    print(f"Transcribe audio file input: {audio_file}")
+    if not audio_file.endswith(".wav"):
+        os.rename(audio_file, audio_file + ".wav")
+        audio_file = audio_file + ".wav"
+
     # Open audio file and transcribe
-    with open(audio, "rb") as audio_file:
-        transcript = openai.Audio.transcribe("whisper-1", audio_file)
+    with open(audio_file, "rb") as f:
+        transcript = openai.Audio.transcribe("whisper-1", f)
     text_transcription = transcript["text"]
 
     return text_transcription
 
 
 def chat_complete(text_input: str) -> str:
+    """
+    Chat complete using OpenAI API. This is what generates stories.
+
+    Args:
+        text_input: Text to use as prompt for story generation
+
+    Returns:
+        str: Generated story
+    """
     global messages
 
     # Append to messages for chat completion
@@ -190,4 +221,25 @@ with gr.Blocks(analytics_enabled=False, title="Audio Storyteller") as ui:
         # Separately trigger the autoplay audio function
         story_msg.change(None, None, None, _js=autoplay_audio)
 
-ui.launch(server_name=config.SERVER_ADDRESS)
+if __name__ == "__main__":
+    # Add a address string argument that defaults to 127.0.0.1
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--address",
+        type=str,
+        default="127.0.0.1",
+        help="""
+        Address to run the server on. 127.0.0.1 for local. 0.0.0.0 for "
+        "remote or docker",
+        """,
+    )
+    # add a port with None default
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Port to run the server on",
+    )
+    args = parser.parse_args()
+
+    ui.launch(server_name=args.address, server_port=args.port)

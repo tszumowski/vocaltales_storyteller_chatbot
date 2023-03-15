@@ -32,7 +32,6 @@ IMAGE_PATH = "generated_image.jpg"  # path to save generated image
 TRANSCRIPT_PATH = f"transcript-{int(time.time())}.txt"
 GENERATED_SPEECH_PATH = "generated_speech.mp3"
 TTS_SPEECH_DELAY = 5.0  # seconds to wait before playing generated speech
-SERVER_ADDRESS = "127.0.0.1"  # Set to "0.0.0.0" to server in Docker
 
 # Voice for GCP Text-to-Speech API
 # Samples: https://cloud.google.com/text-to-speech/docs/voices
