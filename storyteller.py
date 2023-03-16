@@ -14,6 +14,7 @@ import subprocess
 
 from config import SpeechMethod
 from google.cloud import texttospeech
+from typing import Dict, List, Tuple
 
 
 # Set OpenAI API Key
@@ -59,26 +60,38 @@ def transcribe_audio(audio_file: str) -> str:
     return text_transcription
 
 
-def chat_complete(text_input: str) -> str:
+def chat_complete(
+    text_input: str, messages: List[Dict[str, str]]
+) -> Tuple[str, List[Dict[str, str]]]:
     """
     Chat complete using OpenAI API. This is what generates stories.
 
     Args:
         text_input: Text to use as prompt for story generation
+        messages: List of previous messages
 
     Returns:
         str: Generated story
+        messages: Updated list of messages
     """
-    global messages
+    # Init with prompt on first call
+    if not messages:
+        messages = [
+            {
+                "role": "system",
+                "content": config.INITIAL_PROMPT,
+            }
+        ]
 
     # Append to messages for chat completion
     messages.append({"role": "user", "content": text_input})
 
     # Fetch response from OpenAI
+    print("Messages sent to call: ", messages)
     response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
 
     # Extract and store message
-    system_message = response["choices"][0]["message"]
+    system_message = dict(response["choices"][0]["message"])
     messages.append(system_message)
 
     # Return message to display
@@ -93,7 +106,7 @@ def chat_complete(text_input: str) -> str:
         for message in messages:
             f.write(f"{message['role']}: {message['content']}\n\n")
 
-    return display_message
+    return display_message, messages
 
 
 def generate_image(text_input: str) -> str:
@@ -161,6 +174,9 @@ def text_to_speech(input_text: str) -> str:
 Gradio UI Definition
 """
 with gr.Blocks(analytics_enabled=False, title="Audio Storyteller") as ui:
+    # Session state box containing all user/system messages, hidden
+    messages = gr.State(list())
+
     with gr.Row():
         with gr.Column(scale=1):
             # Audio Input Box
@@ -190,7 +206,9 @@ with gr.Blocks(analytics_enabled=False, title="Audio Storyteller") as ui:
     audio_input.change(transcribe_audio, audio_input, transcribed_input)
 
     # Connect user trainput to story output
-    transcribed_input.change(chat_complete, transcribed_input, story_msg)
+    transcribed_input.change(
+        chat_complete, [transcribed_input, messages], [story_msg, messages]
+    )
 
     # Connect story output to image generation
     story_msg.change(generate_image, story_msg, gen_image)

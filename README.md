@@ -2,6 +2,8 @@
 
 ---
 
+**NOTE: This does NOT work on mobile iOS devices. See [Gradio Issue #2987](https://github.com/gradio-app/gradio/issues/2987) for details.**
+
 This is a Gradio UI application that takes in a request for a story from the microphone
 and speaks an interactive Choose-Your-Own-Adventure style children's story. It leverages:
 
