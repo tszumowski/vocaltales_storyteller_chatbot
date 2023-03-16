@@ -1,6 +1,3 @@
-black
-flake8
-google-cloud-texttospeech
-gradio
-openai
-pre-commit
+google-cloud-texttospeech==2.14.1
+gradio==3.20.1
+openai==0.27.1
