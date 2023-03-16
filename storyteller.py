@@ -101,11 +101,6 @@ def chat_complete(
         # call subprocess in background
         subprocess.Popen(["say", system_message["content"]])
 
-    # Write current state of messages to file for debug
-    with open(config.TRANSCRIPT_PATH, "w") as f:
-        for message in messages:
-            f.write(f"{message['role']}: {message['content']}\n\n")
-
     return display_message, messages
 
 

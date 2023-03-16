@@ -74,7 +74,7 @@ docker run -it --rm \
     python storyteller.py \
     --address=0.0.0.0 \
     --port=7860 \
-    --user=<username> \
+    --username=<username> \
     --password=<password>
 ```
 
@@ -99,12 +99,14 @@ optional username:password you provided.
        --platform managed \
        --service-account=audio-storytelling-bot@<project-id>.iam.gserviceaccount.com \
        --set-env-vars=OPENAI_API_KEY=<openai-key-string> \
-       --no-allow-unauthenticated \
+       --allow-unauthenticated \
        --port=7860 \
        --cpu=1 \
        --memory=512Mi \
        --min-instances=0 \
-       --max-instances=1
+       --max-instances=1 \
+       --command="python" \
+       --args="storyteller.py,--address=0.0.0.0,--port=7860,--username=user,--password=storyteller"
    ```
 
 Cloud Run will automatically scale the number of instances based on the incoming traffic. You can access the deployed Gradio application via the URL provided by the Cloud Run service.
