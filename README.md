@@ -1,6 +1,7 @@
-# Children's Storytelling Audio Chatbot
-
+# VocalTales: Children's Storytelling Audio Chatbot
 ---
+
+**[See the Medium Article for context and more information]( https://medium.com/@tszumowski/f796fc715dcb)**
 
 **NOTE: This does NOT work on mobile iOS devices. See [Gradio Issue #2987](https://github.com/gradio-app/gradio/issues/2987) for details.**
 
@@ -104,7 +105,7 @@ optional username:password you provided.
        --cpu=1 \
        --memory=512Mi \
        --min-instances=0 \
-       --max-instances=1 \
+       --max-instances=3 \
        --command="python" \
        --args="storyteller.py,--address=0.0.0.0,--port=7860,--username=user,--password=storyteller"
    ```

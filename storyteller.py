@@ -124,12 +124,13 @@ def generate_image(text_input: str) -> str:
 
 
 # Call Google Cloud Text-to-Speech API to convert text to speech
-def text_to_speech(input_text: str) -> str:
+def text_to_speech(input_text: str, tts_voice_label: str) -> str:
     """
     Use GCP Text-to-Speech API to convert text to a WAV file.
 
     Args:
         input_text: Text to convert to speech
+        tts_voice_label: Label of voice to use, from keys of TTS_VOICE_OPTIONS in config
 
     Returns
         str: Path to output audio file
@@ -141,9 +142,13 @@ def text_to_speech(input_text: str) -> str:
     # set up the synthesis input object
     synthesis_input = texttospeech.SynthesisInput(text=input_text)
 
+    # derive language code and ID
+    tts_voice_id = config.TTS_VOICE_OPTIONS[tts_voice_label]
+    tts_language_code = "-".join(tts_voice_id.split("-")[0:2])
+
     # set up the voice parameters
     voice = texttospeech.VoiceSelectionParams(
-        language_code=config.TTS_VOICE_LANGUAGE_CODE, name=config.TTS_VOICE
+        language_code=tts_language_code, name=tts_voice_id
     )
 
     # set up the audio parameters
@@ -168,12 +173,24 @@ def text_to_speech(input_text: str) -> str:
 """
 Gradio UI Definition
 """
-with gr.Blocks(analytics_enabled=False, title="Audio Storyteller") as ui:
+with gr.Blocks(analytics_enabled=False, title="VocalTales: Audio Storyteller") as ui:
     # Session state box containing all user/system messages, hidden
     messages = gr.State(list())
 
     with gr.Row():
         with gr.Column(scale=1):
+            with gr.Accordion("Click for Instructions & Configuration:", open=False):
+                # Voice Selection Dropdown
+                voice_labels = [k for k in config.TTS_VOICE_OPTIONS.keys()]
+                voice_selection = gr.Dropdown(
+                    choices=voice_labels,
+                    value=config.TTS_VOICE_DEFAULT,
+                    label="Voice Selection",
+                )
+
+                # Instructions
+                gr.Markdown(config.INSTRUCTIONS_TEXT)
+
             # Audio Input Box
             audio_input = gr.Audio(
                 source="microphone", type="filepath", label="User Audio Input"
@@ -228,7 +245,7 @@ with gr.Blocks(analytics_enabled=False, title="Audio Storyteller") as ui:
 
     if config.SPEECH_METHOD == SpeechMethod.GCP:
         # Connect story output to audio output after calling TTS on it
-        story_msg.change(text_to_speech, story_msg, audio_output)
+        story_msg.change(text_to_speech, [story_msg, voice_selection], audio_output)
 
         # Separately trigger the autoplay audio function
         story_msg.change(None, None, None, _js=autoplay_audio)

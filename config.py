@@ -31,9 +31,20 @@ IMAGE_PATH = "generated_image.jpg"  # path to save generated image
 GENERATED_SPEECH_PATH = "generated_speech.mp3"
 TTS_SPEECH_DELAY = 5.0  # seconds to wait before playing generated speech
 
-# Voice for GCP Text-to-Speech API
-# Samples: https://cloud.google.com/text-to-speech/docs/voices
-TTS_VOICE = "en-GB-Neural2-C"
+"""
+Voice for GCP Text-to-Speech API
+Samples & More Options at: https://cloud.google.com/text-to-speech/docs/voices
+Keys are derived from the Google naming scheme in the above site.
+"""
+TTS_VOICE_DEFAULT = "US Female"
+TTS_VOICE_OPTIONS = {
+    "AU Female": "en-AU-Neural2-C",
+    "AU Male": "en-AU-Neural2-B",
+    "US Female": "en-US-Neural2-C",
+    "US Male": "en-US-Neural2-D",
+    "GB Female": "en-GB-Neural2-C",
+    "GB Male": "en-GB-Neural2-D",
+}
 
 """
 Example Prompts
@@ -65,7 +76,30 @@ INITIAL_PROMPT = """
 """
 
 """
-DERIVED CONFIG
+INSTRUCTIONS
 """
-# Derive only xx-xx from TTS_VOICE
-TTS_VOICE_LANGUAGE_CODE = "-".join(TTS_VOICE.split("-")[0:2])
+INSTRUCTIONS_TEXT = """
+            Instructions:
+
+            VocalTales is a audio-based storytelling chatbot. It will generate a story
+            chapter from your input and ask you what to do next. After each entry,
+            it will speak the story in the selected voice and generate an image based
+            on the current story contents.
+
+            1. Select the voice type in this box.
+            1. Press `Record from microphone.
+            1. Speak your story input.
+            1. Wait for the story to be generated and image to be generated.
+            1. If audio doesn't start automatically, Press the `Play` button in
+            the `Output` box.
+            1. When ready to provide another input, under `User Audio Input`, press the
+            `X` in the top-right corner to clear the last recording. Then press
+            `Record from microphone` again and speak your next input.
+
+            Note: When you press `X` you may see a red `Error` in a box. That is normal.
+
+
+            References:
+            - Source Code: https://github.com/tszumowski/vocaltales_storyteller_chatbot
+            - [Medium Article](https://medium.com/@tszumowski/f796fc715dcb)
+            """  # NOQA
