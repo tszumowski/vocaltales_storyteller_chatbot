@@ -101,5 +101,5 @@ INSTRUCTIONS_TEXT = """
 
             References:
             - Source Code: https://github.com/tszumowski/vocaltales_storyteller_chatbot
-            - [Medium Article](https://medium.com/@tszumowski/vocaltales-a-cheap-interactive-all-audio-interactive-ai-childrens-storyteller-f796fc715dcb)
+            - [Medium Article](https://medium.com/@tszumowski/f796fc715dcb)
             """  # NOQA

@@ -1,7 +1,7 @@
 # VocalTales: Children's Storytelling Audio Chatbot
 ---
 
-**[See the Medium Article for context and more information]( https://medium.com/@tszumowski/vocaltales-a-cheap-interactive-all-audio-interactive-ai-childrens-storyteller-f796fc715dcb)**
+**[See the Medium Article for context and more information]( https://medium.com/@tszumowski/f796fc715dcb)**
 
 **NOTE: This does NOT work on mobile iOS devices. See [Gradio Issue #2987](https://github.com/gradio-app/gradio/issues/2987) for details.**
 
