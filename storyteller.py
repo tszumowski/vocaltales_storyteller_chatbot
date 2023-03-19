@@ -217,7 +217,7 @@ with gr.Blocks(analytics_enabled=False, title="VocalTales: Audio Storyteller") a
     # Connect audio input to user input
     audio_input.change(transcribe_audio, audio_input, transcribed_input)
 
-    # Connect user trainput to story output
+    # Connect user input to story output
     transcribed_input.change(
         chat_complete, [transcribed_input, messages], [story_msg, messages]
     )
