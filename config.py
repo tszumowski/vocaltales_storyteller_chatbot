@@ -23,7 +23,7 @@ class SpeechMethod(Enum):
 
 
 # Set the method here
-SPEECH_METHOD = SpeechMethod.ELEVENIO
+SPEECH_METHOD = SpeechMethod.GCP
 
 
 """
