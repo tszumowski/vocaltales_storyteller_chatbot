@@ -198,8 +198,8 @@ def text_to_speech_elevenio(
         str: Path to output audio file
     """
     print(f"Convert text to speech: {input_text}")
-    url = f"{config.ELEVENIO_TTS_BASE_URL}/{tts_voice_id}"
     tts_voice_id = config.ELEVENIO_VOICE_ID  # Use pre-assigned from config
+    url = f"{config.ELEVENIO_TTS_BASE_URL}/{tts_voice_id}"
 
     payload = json.dumps(
         {
