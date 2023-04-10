@@ -5,9 +5,12 @@ Speech method
     None: No speech
     "gcp": Google Cloud Platform Text-to-Speech API
     "mac": Mac OS X say command
+    "elevenio": Eleven.io Text-to-Speech API
 
 Note: For GCP, you must be authenticated with the gcloud CLI or set the
 GOOGLE_APPLICATION_CREDENTIALS environment variable
+
+For Eleven.io you need to add an ELEVENIO_API_KEY as environment variable with key
 """
 
 
@@ -16,6 +19,7 @@ class SpeechMethod(Enum):
     NONE = 1
     GCP = 2
     MAC = 3
+    ELEVENIO = 4
 
 
 # Set the method here
@@ -45,6 +49,20 @@ TTS_VOICE_OPTIONS = {
     "GB Female": "en-GB-Neural2-C",
     "GB Male": "en-GB-Neural2-D",
 }
+
+"""
+Eleven.io Text-to-Speech API Config
+"""
+# can get the ID of voice through API /voice URL or look at the URL called when
+# generating online
+"""
+curl --location 'https://api.elevenlabs.io/v1/voices' \
+--header 'xi-api-key: [API_KEY]' \
+--header 'Accept: application/json'
+"""
+# TODO: Can make options like GCP above to make this more generic
+ELEVENIO_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
+ELEVENIO_TTS_BASE_URL = "https://api.elevenlabs.io/v1/text-to-speech"
 
 """
 Example Prompts

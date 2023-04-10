@@ -7,6 +7,7 @@ Example Usage:
 import argparse
 import config
 import gradio as gr
+import json
 import openai
 import os
 import requests
@@ -21,6 +22,15 @@ from typing import Dict, List, Tuple
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 if openai.api_key is None:
     raise ValueError("OpenAI API Key not set as environnment variable OPENAI_API_KEY")
+
+# Get eleven.io
+elevenio_api_key = None
+if config.SPEECH_METHOD == SpeechMethod.ELEVENIO:
+    elevenio_api_key = os.environ.get("ELEVENIO_API_KEY")
+    if elevenio_api_key is None:
+        raise ValueError(
+            "Eleven.io API Key not set as environnment variable ELEVENIO_API_KEY"
+        )
 
 # Initial message
 messages = [
@@ -123,8 +133,7 @@ def generate_image(text_input: str) -> str:
     return config.IMAGE_PATH
 
 
-# Call Google Cloud Text-to-Speech API to convert text to speech
-def text_to_speech(input_text: str, tts_voice_label: str) -> str:
+def text_to_speech_gcp(input_text: str, tts_voice_label: str) -> str:
     """
     Use GCP Text-to-Speech API to convert text to a WAV file.
 
@@ -170,6 +179,53 @@ def text_to_speech(input_text: str, tts_voice_label: str) -> str:
     return config.GENERATED_SPEECH_PATH
 
 
+def text_to_speech_elevenio(
+    input_text: str,
+    tts_voice_id: str,
+    stability: float = 0.65,
+    similarity_boost: float = 0.85,
+) -> str:
+    """
+    Use Eleven.io Text-to-Speech API to convert text to a WAV file.
+
+    Args:
+        input_text: Text to convert to speech
+        tts_voice_label: Label of voice to use, from keys of ELEVENIO_VOICE_ID in config
+        similarity_boost: Similarity boost for voice
+        stability: Stability for voice
+
+    Returns
+        str: Path to output audio file
+    """
+    print(f"Convert text to speech: {input_text}")
+    tts_voice_id = config.ELEVENIO_VOICE_ID  # Use pre-assigned from config
+    url = f"{config.ELEVENIO_TTS_BASE_URL}/{tts_voice_id}"
+
+    payload = json.dumps(
+        {
+            "text": input_text,
+            "voice_settings": {
+                "stability": stability,
+                "similarity_boost": similarity_boost,
+            },
+        }
+    )
+    headers = {
+        "xi-api-key": elevenio_api_key,
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    # save the response audio as an MP3 file
+    with open(config.GENERATED_SPEECH_PATH, "wb") as out:
+        out.write(response.content)
+
+    # return response.audio_content
+    return config.GENERATED_SPEECH_PATH
+
+
 """
 Gradio UI Definition
 """
@@ -203,7 +259,10 @@ with gr.Blocks(analytics_enabled=False, title="VocalTales: Audio Storyteller") a
             story_msg = gr.Textbox(label="Story")
 
             # Add components for TTS
-            if config.SPEECH_METHOD == SpeechMethod.GCP:
+            if (
+                config.SPEECH_METHOD == SpeechMethod.GCP
+                or config.SPEECH_METHOD == SpeechMethod.ELEVENIO
+            ):
                 # Audio output box if using Google Cloud TTS
                 audio_output = gr.Audio(label="Output", elem_id="speaker")
 
@@ -226,7 +285,7 @@ with gr.Blocks(analytics_enabled=False, title="VocalTales: Audio Storyteller") a
     story_msg.change(generate_image, story_msg, gen_image)
 
     """
-    Used for GCP TTS only
+    Used for External API TTS only
 
     Workaround: Custom (hacky) Javascript function to autoplay audio
     Derived from: https://github.com/gradio-app/gradio/issues/1349
@@ -243,9 +302,15 @@ with gr.Blocks(analytics_enabled=False, title="VocalTales: Audio Storyteller") a
         speech_delay=int(config.TTS_SPEECH_DELAY * 1000)
     )
 
+    tts_fn = None
     if config.SPEECH_METHOD == SpeechMethod.GCP:
+        tts_fn = text_to_speech_gcp
+    elif config.SPEECH_METHOD == SpeechMethod.ELEVENIO:
+        tts_fn = text_to_speech_elevenio
+
+    if tts_fn:
         # Connect story output to audio output after calling TTS on it
-        story_msg.change(text_to_speech, [story_msg, voice_selection], audio_output)
+        story_msg.change(tts_fn, [story_msg, voice_selection], audio_output)
 
         # Separately trigger the autoplay audio function
         story_msg.change(None, None, None, _js=autoplay_audio)
