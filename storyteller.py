@@ -5,8 +5,10 @@ Example Usage:
     python storyteller.py --address=127.0.0.1 --port=7860
 """
 import argparse
+import base64
 import config
 import gradio as gr
+import io
 import json
 import openai
 import os
@@ -133,6 +135,30 @@ def generate_image(text_input: str) -> str:
     return config.IMAGE_PATH
 
 
+def audio_file_to_html(audio_file: str) -> str:
+    """
+    Convert audio file to HTML audio player.
+
+    Args:
+        audio_file: Path to audio file
+
+    Returns:
+        audio_player: HTML audio player that auto-plays
+    """
+    # Read in audio file to audio_bytes
+    audio_bytes = io.BytesIO()
+    with open(audio_file, "rb") as f:
+        audio_bytes.write(f.read())
+
+    # Generate audio player HTML object for autoplay
+    audio_bytes.seek(0)
+    audio = base64.b64encode(audio_bytes.read()).decode("utf-8")
+    audio_player = (
+        f'<audio src="data:audio/mpeg;base64,{audio}" controls autoplay></audio>'
+    )
+    return audio_player
+
+
 def text_to_speech_gcp(input_text: str, tts_voice_label: str) -> str:
     """
     Use GCP Text-to-Speech API to convert text to a WAV file.
@@ -175,8 +201,10 @@ def text_to_speech_gcp(input_text: str, tts_voice_label: str) -> str:
     with open(config.GENERATED_SPEECH_PATH, "wb") as out:
         out.write(response.audio_content)
 
-    # return response.audio_content
-    return config.GENERATED_SPEECH_PATH
+    # Generate audio player HTML object for autoplay
+    audio_player = audio_file_to_html(config.GENERATED_SPEECH_PATH)
+
+    return audio_player
 
 
 def text_to_speech_elevenio(
@@ -222,8 +250,11 @@ def text_to_speech_elevenio(
     with open(config.GENERATED_SPEECH_PATH, "wb") as out:
         out.write(response.content)
 
+    # Generate audio player HTML object for autoplay
+    audio_player = audio_file_to_html(config.GENERATED_SPEECH_PATH)
+
     # return response.audio_content
-    return config.GENERATED_SPEECH_PATH
+    return audio_player
 
 
 """
@@ -233,6 +264,14 @@ with gr.Blocks(analytics_enabled=False, title="VocalTales: Audio Storyteller") a
     # Session state box containing all user/system messages, hidden
     messages = gr.State(list())
 
+    # Initialize TTS
+    tts_fn = None
+    if config.SPEECH_METHOD == SpeechMethod.GCP:
+        tts_fn = text_to_speech_gcp
+    elif config.SPEECH_METHOD == SpeechMethod.ELEVENIO:
+        tts_fn = text_to_speech_elevenio
+
+    # Set up layout and link actions together
     with gr.Row():
         with gr.Column(scale=1):
             with gr.Accordion("Click for Instructions & Configuration:", open=False):
@@ -258,16 +297,10 @@ with gr.Blocks(analytics_enabled=False, title="VocalTales: Audio Storyteller") a
             # Story Output Box
             story_msg = gr.Textbox(label="Story")
 
-            # Add components for TTS
-            if (
-                config.SPEECH_METHOD == SpeechMethod.GCP
-                or config.SPEECH_METHOD == SpeechMethod.ELEVENIO
-            ):
-                # Audio output box if using Google Cloud TTS
-                audio_output = gr.Audio(label="Output", elem_id="speaker")
-
-                # Just a sink to pass through and trigger Javascript audio autoplay on
-                text_sink = gr.Textbox(label="Debug", visible=False)
+            if tts_fn:
+                # Connect story output to audio output after calling TTS on it
+                html = gr.HTML()
+                story_msg.change(tts_fn, [story_msg, voice_selection], html)
 
         with gr.Column(scale=1):
             # Story Generated Image
@@ -284,36 +317,6 @@ with gr.Blocks(analytics_enabled=False, title="VocalTales: Audio Storyteller") a
     # Connect story output to image generation
     story_msg.change(generate_image, story_msg, gen_image)
 
-    """
-    Used for External API TTS only
-
-    Workaround: Custom (hacky) Javascript function to autoplay audio
-    Derived from: https://github.com/gradio-app/gradio/issues/1349
-    Needs a timeout to wait for the Google TTS call to complete and the audio
-    file sent to the gradio object in browser.
-    """
-    autoplay_audio = """
-            async () => {{
-                setTimeout(() => {{
-                    document.querySelector('#speaker audio').play();
-                }}, {speech_delay});
-            }}
-        """.format(
-        speech_delay=int(config.TTS_SPEECH_DELAY * 1000)
-    )
-
-    tts_fn = None
-    if config.SPEECH_METHOD == SpeechMethod.GCP:
-        tts_fn = text_to_speech_gcp
-    elif config.SPEECH_METHOD == SpeechMethod.ELEVENIO:
-        tts_fn = text_to_speech_elevenio
-
-    if tts_fn:
-        # Connect story output to audio output after calling TTS on it
-        story_msg.change(tts_fn, [story_msg, voice_selection], audio_output)
-
-        # Separately trigger the autoplay audio function
-        story_msg.change(None, None, None, _js=autoplay_audio)
 
 if __name__ == "__main__":
     # Add a address string argument that defaults to 127.0.0.1
