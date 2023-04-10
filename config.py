@@ -60,8 +60,7 @@ curl --location 'https://api.elevenlabs.io/v1/voices' \
 --header 'xi-api-key: [API_KEY]' \
 --header 'Accept: application/json'
 """
-# TODO: Can make options like GCP above and pass those in same way if want to make
-# this more generic
+# TODO: Can make options like GCP above to make this more generic
 ELEVENIO_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
 ELEVENIO_TTS_BASE_URL = "https://api.elevenlabs.io/v1/text-to-speech"
 
